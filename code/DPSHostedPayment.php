@@ -42,11 +42,11 @@ class DPSHostedPayment extends DataObject{
 		'Status' => "Enum('Incomplete,Success,Failure,Pending','Incomplete')",
 		'Amount' => 'Currency',
 		'Currency' => 'Varchar(3)',
-		'TxnRef' => 'Varchar',
+		'TxnRef' => 'Varchar', // only written on success
 		'Message' => 'Varchar',
 		'IP' => 'Varchar',
 		'ProxyIP' => 'Varchar',
-		'AuthorizationCode' => 'Varchar',
+		'AuthorizationCode' => 'Varchar', // only written on success
 		'TxnID' => 'Varchar' // random number
 	);
 	
@@ -115,14 +115,23 @@ class DPSHostedPayment extends DataObject{
 		
 		// decorate request (if necessary)
 		$this->extend('prepareRequest', $request);
+		
+		// set currency
+		$this->Currency = $request->getInputCurrency();
 	
 		// submit payment request to get the URL for redirection
 		$pxpay = new PxPay(self::$pxPay_Url, self::$pxPay_Userid, self::$pxPay_Key);
 		$request_string = $pxpay->makeRequest($request);
-		
+
 		$response = new MifMessage($request_string);
 		$url = $response->get_element_text("URI");
 		$valid = $response->get_attribute("valid");
+		
+		// set status to pending
+		if($valid) {
+			$this->Status = 'Pending';
+			$this->write();
+		}
 
 		header("Location: ".$url);
 		die;
@@ -159,14 +168,16 @@ class DPSHostedPayment extends DataObject{
 		// Auth, Complete, Purchase, Refund (DPS recomend completeing refunds through other API's)
 		$request->setTxnType('Purchase'); // mandatory
 		
-		$request->setTxnID($this->TxnID);
+		// randomly generated number from {@link processPayment()}
+		$request->setTxnId($this->TxnID);
 		
+		// defaults to NZD
 		$request->setInputCurrency(self::$px_currency); // mandatory
 		
 		// use website URL as a reference if none is given
 		$ref = (self::$px_merchantreference) ? self::$px_merchantreference : Director::absoluteBaseURL();
 		$request->setMerchantReference($ref); // mandatory
-		
+
 		if(isset($data['Email'])) {
 			$request->setEmailAddress($data['Email']); // optional
 		}
@@ -204,6 +215,9 @@ class DPSHostedPayment_Controller extends Controller {
 		if(preg_match('/^PXHOST/i', $_SERVER['HTTP_USER_AGENT'])){
 			$dpsDirectlyConnecting = 1;
 		}
+		
+		// @todo more solid page detection (check if published)
+		$page = DataObject::get_one('DPSHostedPaymentPage');
 
 		//$pxaccess = new PxAccess($PxAccess_Url, $PxAccess_Userid, $PxAccess_Key, $Mac_Key);
 
@@ -227,20 +241,28 @@ class DPSHostedPayment_Controller extends Controller {
 			$SQL_paymentID = (int)$paymentID;
 
 			$payment = DataObject::get_one('DPSHostedPayment', "`TxnID` = '$SQL_paymentID'");
-			if(!$payment) return false;
+			if(!$payment) {
+				// @todo more specific error messages
+				$redirectURL = $page->Link() . '/error';
+				Director::redirect($redirectURL);
+			}
 
 			$success = $rsp->getSuccess();
 			if($success =='1'){
+				// @todo Use AmountSettlement for amount setting?
 				$payment->TxnRef=$rsp->getDpsTxnRef();
 				$payment->Status="Success";
 				$payment->AuthorizationCode=$rsp->getAuthCode();
+				$redirectURL = $page->Link() . '/success';
 
 			} else {
 				$payment->Message=$rsp->getResponseText();
 				$payment->Status="Failure";
+				$redirectURL = $page->Link() . '/error';
 			}
 			$payment->write();
-			return $payment;
+			Director::redirect($redirectURL);
+
 		}
 	}
 
