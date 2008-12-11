@@ -3,14 +3,34 @@
  * @package payment_dpshosted
  */
 class DPSHostedPayment extends DataObject{
+	
 	static $pxAccess_Url = "https://www.paymentexpress.com/pxpay/pxpay.aspx";
+	
 	private static $pxAccess_Userid;
+	
 	private static $pxAccess_Key;
+	
 	private static $mac_Key;
 	
 	static static $pxPay_Url  = "https://www.paymentexpress.com/pxpay/pxaccess.aspx";
-  	private static $pxPay_Userid;
-  	private static $pxPay_Key;
+  	
+	private static $pxPay_Userid;
+  	
+	private static $pxPay_Key;
+	
+	static $db = array(
+		'Status' => "Enum('Incomplete,Success,Failure,Pending','Incomplete')",
+		'Amount' => 'Currency',
+		'Currency' => 'Varchar(3)',
+		'TxnRef' => 'Varchar',
+		'Message' => 'Varchar',
+		'IP' => 'Varchar',
+		'ProxyIP' => 'Varchar',
+		'AuthorizationCode' => 'Varchar'
+	);
+	
+	static $has_one = array(
+	);
 	
 	static function set_px_access_userid($id){
 		self::$pxAccess_Userid = $id;
@@ -51,20 +71,6 @@ class DPSHostedPayment extends DataObject{
 	static function get_px_pay_key(){
 		return self::$pxPay_Key;
 	}
-
-	static $db = array(
-		'Status' => "Enum('Incomplete,Success,Failure,Pending','Incomplete')",
-		'Amount' => 'Currency',
-		'Currency' => 'Varchar(3)',
-		'TxnRef' => 'Varchar',
-		'Message' => 'Varchar',
-		'IP' => 'Varchar',
-		'ProxyIP' => 'Varchar',
-		'AuthorizationCode' => 'Varchar'
-	);
-	
-	static $has_one = array(
-	);
 	
 	function processPayment($data, $form){
 		$request = new PxPayRequest();
