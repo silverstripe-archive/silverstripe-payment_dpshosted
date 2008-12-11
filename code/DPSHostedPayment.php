@@ -44,7 +44,8 @@ class DPSHostedPayment extends DataObject{
 		'Message' => 'Varchar',
 		'IP' => 'Varchar',
 		'ProxyIP' => 'Varchar',
-		'AuthorizationCode' => 'Varchar'
+		'AuthorizationCode' => 'Varchar',
+		'TxnID' => 'Varchar' // random number
 	);
 	
 	static $has_one = array(
@@ -90,6 +91,14 @@ class DPSHostedPayment extends DataObject{
 		return self::$pxPay_Key;
 	}
 	
+	static function generate_txn_id() {
+		do {
+			$rand = rand();
+			$idExists = (bool)DB::query("SELECT COUNT(*) FROM `DPSHostedPayment` WHERE `TxnID` = '{$rand}'")->value();
+		} while($idExists);
+		return $rand;
+	}
+	
 	/**
 	 * Executed in form submission *before* anything
 	 * goes out to DPS.
@@ -97,10 +106,12 @@ class DPSHostedPayment extends DataObject{
 	public function processPayment($data, $form){
 		$request = $this->prepareRequest($data);
 		
+		// gerenate unique transaction ID
+		$this->TxnID = DPSHostedPayment::generate_txn_id();
+		$this->write();
+		
 		// decorate request (if necessary)
 		$this->extend('prepareRequest', $request);
-	
-		var_dump($request->toXML());die();
 	
 		// submit payment request to get the URL for redirection
 		$pxpay = new PxPay(self::$pxPay_Url, self::$pxPay_Userid, self::$pxPay_Key);
@@ -144,6 +155,8 @@ class DPSHostedPayment extends DataObject{
 		
 		// Auth, Complete, Purchase, Refund (DPS recomend completeing refunds through other API's)
 		$request->setTxnType('Purchase'); // mandatory
+		
+		$request->setTxnID($this->TxnID);
 		
 		$request->setInputCurrency(self::$px_currency); // mandatory
 		
@@ -208,8 +221,10 @@ class DPSHostedPayment_Controller extends Controller {
 		} else {
 			// Human visitor
 			$paymentID = $rsp->getTxnId();
+			$SQL_paymentID = (int)$paymentID;
 
-			$payment = DataObject::get_by_id('DPSHostedPayment', $paymentID);
+			$payment = DataObject::get_one('DPSHostedPayment', "`TxnID` = '$SQL_paymentID'");
+			if(!$payment) return false;
 
 			$success = $rsp->getSuccess();
 			if($success =='1'){
