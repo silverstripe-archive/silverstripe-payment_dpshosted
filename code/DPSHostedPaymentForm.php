@@ -18,7 +18,7 @@ class DPSHostedPaymentForm extends Form{
 		);
 
 		$actions = new FieldSet(
-			new FormAction("doDonate", "Pay")
+			new FormAction("doPay", "Pay")
 		);
 		
 		$validator = new RequiredFields(array(
@@ -32,7 +32,7 @@ class DPSHostedPaymentForm extends Form{
 		
 	}
 	
-	function doDonate($data, $form){
+	function doPay($data, $form){
 		$paymentClass = self::$payment_class;
 		$payment = new $paymentClass();
 		
