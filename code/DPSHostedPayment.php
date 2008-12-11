@@ -1,8 +1,19 @@
 <?php
 /**
+ * Step-by-Step:
+ * 1. Send XML transaction request (GenerateRequest) to PaymentExpress
+ * 2. Receive XML response (Request) with the URI element (encrypted URL), which you use to redirect the user to PaymentExpress so they can enter their card details
+ * 3. Cardholder enters their details and transaction is sent to your bank for authorisation. The response is given and they are redirected back to your site with the response
+ * 4. You take the "Request" parameter (encrypted URL response) in the URL string and use this in the "Response" element, to send the response request (ProcessResponse) to PaymentExpress to decrypt and receive the XML response back.
+ * 5. Receive XML response (Response) with the authorised result of the transaction.
+ * 
+ * @see http://www.paymentexpress.com/technical_resources/ecommerce_hosted/pxpay.html
+ * 
  * @package payment_dpshosted
  */
 class DPSHostedPayment extends DataObject{
+	
+	static $payment_form_class = 'DPSHostedPaymentForm';
 	
 	static $pxAccess_Url = "https://www.paymentexpress.com/pxpay/pxpay.aspx";
 	
@@ -80,6 +91,74 @@ class DPSHostedPayment extends DataObject{
 	}
 	
 	/**
+	 * Executed in form submission *before* anything
+	 * goes out to DPS.
+	 */
+	public function processPayment($data, $form){
+		$request = $this->prepareRequest($data);
+		
+		// decorate request (if necessary)
+		$this->extend('prepareRequest', $request);
+	
+		var_dump($request->toXML());die();
+	
+		// submit payment request to get the URL for redirection
+		$pxpay = new PxPay(self::$pxPay_Url, self::$pxPay_Userid, self::$pxPay_Key);
+		$request_string = $pxpay->makeRequest($request);
+		
+		$response = new MifMessage($request_string);
+		$url = $response->get_element_text("URI");
+		$valid = $response->get_attribute("valid");
+
+		header("Location: ".$url);
+		die;
+	}
+	
+	/**
+	 * Generate a {@link PxPayRequest} object and populate it with the submitted
+	 * data from a {@link DPSHostedPaymentForm} instance. You'll likely need to subclass
+	 * this method to add custom data.
+	 * 
+	 * @see http://www.paymentexpress.com/technical_resources/ecommerce_hosted/pxpay.html#GenerateRequest
+	 * 
+	 * @param array $data
+	 * @return PxPayRequest
+	 */
+	protected function prepareRequest($data){
+		$request = new PxPayRequest();
+		
+		// Set in payment_dpshosted/_config.php
+		$postProcess_url = Director::absoluteBaseURL() ."DPSHostedPayment/processResponse";
+		$request->setUrlFail($postProcess_url);
+		$request->setUrlSuccess($postProcess_url);
+		
+		// set amount
+		$request->setAmountInput($data['Amount']);
+		
+		// mandatory free text data
+		if(isset($data['FirstName']) && isset($data['SurName'])) {
+			$request->setTxnData1($data['FirstName']." ".$data['SurName']);
+			//$request->setTxnData2();
+			//$request->setTxnData3();
+		}
+		
+		// Auth, Complete, Purchase, Refund (DPS recomend completeing refunds through other API's)
+		$request->setTxnType('Purchase'); // mandatory
+		
+		$request->setInputCurrency(self::$px_currency); // mandatory
+		
+		// use website URL as a reference if none is given
+		$ref = (self::$px_merchantreference) ? self::$px_merchantreference : Director::absoluteBaseURL();
+		$request->setMerchantReference($ref); // mandatory
+		
+		if(isset($data['Email'])) {
+			$request->setEmailAddress($data['Email']); // optional
+		}
+		
+		return $request;
+	}
+	
+	/**
 	 * Set the IP address and Proxy IP (if available) from the site visitor.
 	 * Does an ok job of proxy detection. Probably can't be too much better because anonymous proxies
 	 * will make themselves invisible.
@@ -103,32 +182,7 @@ class DPSHostedPayment extends DataObject{
 class DPSHostedPayment_Controller extends Controller {
 	
 	/**
-	 * Set in payment_dpshosted/_config.php
-	 */
-	public function Link() {
-		return 'DPSHostedPayment';
-	}
-	
-	public function processPayment($data, $form){
-		$request = $this->prepareRequest($data);
-		
-		// decorate request (if necessary)
-		$this->extend('prepareRequest', $request);
-	
-		// submit payment request to get the URL for redirection
-		$pxpay = new PxPay(self::$pxPay_Url, self::$pxPay_Userid, self::$pxPay_Key);
-		$request_string = $pxpay->makeRequest($request);
-		
-		$response = new MifMessage($request_string);
-		$url = $response->get_element_text("URI");
-		$valid = $response->get_attribute("valid");
-
-		header("Location: ".$url);
-		die;
-	}
-	
-	/**
-	 * React to DSP response triggered 
+	 * React to DSP response triggered by {@link processPayment()}.
 	 */
 	public static function processResponse() {
 		if(preg_match('/^PXHOST/i', $_SERVER['HTTP_USER_AGENT'])){
@@ -147,10 +201,10 @@ class DPSHostedPayment_Controller extends Controller {
 
 		$rsp = $pxpay->getResponse($enc_hex);
 
-		if(isset($dpsDirectlyConnecting && $dpsDirectlyConnecting) {
+		if(isset($dpsDirectlyConnecting) && $dpsDirectlyConnecting) {
 			// DPS Service connecting directly
 			$success = $rsp->getSuccess();   # =1 when request succeeds
-			echo ($success =='1') "success" : "failure";
+			echo ($success =='1') ? "success" : "failure";
 		} else {
 			// Human visitor
 			$paymentID = $rsp->getTxnId();
@@ -170,38 +224,6 @@ class DPSHostedPayment_Controller extends Controller {
 			$payment->write();
 			return $payment;
 		}
-	}
-	
-	/**
-	 * @see http://www.paymentexpress.com/technical_resources/ecommerce_hosted/pxpay.html#GenerateRequest
-	 * 
-	 * @param array $data
-	 */
-	protected function prepareRequest($data){
-		$request = new PxPayRequest();
-
-		$postProcess_url = Director::baseURL() . $this->Link() ."/processDonationResponse";
-		$request->setUrlFail($postProcess_url);
-		$request->setUrlSuccess($postProcess_url);
-		
-		// set amount
-		$request->setAmountInput($data['Amount']);
-		
-		// mandatory free text data
-		$request->setTxnData1($data['Salutation']." ".$data['FirstName']." ".$data['SurName']);
-		//$request->setTxnData2();
-		//$request->setTxnData3();
-		
-		// Auth, Complete, Purchase, Refund (DPS recomend completeing refunds through other API's)
-		$request->setTxnType('Purchase'); // mandatory
-		
-		$request->setInputCurrency(self::$px_currency); // mandatory
-		
-		$request->setMerchantReference(self::$px_merchantref); // mandatory
-		
-		$request->setEmailAddress($data['Email']); // optional
-		
-		return $request;
 	}
 
 }
