@@ -2,10 +2,12 @@
 /**
  * Step-by-Step:
  * 1. Send XML transaction request (GenerateRequest) to PaymentExpress
+ *    => DPSHostedPaymentForm->doPay() => DPSHostedPayment->prepareRequest() => DPSHostedPayment->processPayment()
  * 2. Receive XML response (Request) with the URI element (encrypted URL), which you use to redirect the user to PaymentExpress so they can enter their card details
  * 3. Cardholder enters their details and transaction is sent to your bank for authorisation. The response is given and they are redirected back to your site with the response
  * 4. You take the "Request" parameter (encrypted URL response) in the URL string and use this in the "Response" element, to send the response request (ProcessResponse) to PaymentExpress to decrypt and receive the XML response back.
  * 5. Receive XML response (Response) with the authorised result of the transaction.
+ *    => DPSHostedPayment_Controller->processResponse()
  * 
  * @see http://www.paymentexpress.com/technical_resources/ecommerce_hosted/pxpay.html
  * 
@@ -104,11 +106,12 @@ class DPSHostedPayment extends DataObject{
 	 * goes out to DPS.
 	 */
 	public function processPayment($data, $form){
-		$request = $this->prepareRequest($data);
-		
-		// gerenate unique transaction ID
+		// generate a unique transaction ID
 		$this->TxnID = DPSHostedPayment::generate_txn_id();
 		$this->write();
+		
+		// generate request from thirdparty pxpayment classes
+		$request = $this->prepareRequest($data);
 		
 		// decorate request (if necessary)
 		$this->extend('prepareRequest', $request);
@@ -197,7 +200,7 @@ class DPSHostedPayment_Controller extends Controller {
 	/**
 	 * React to DSP response triggered by {@link processPayment()}.
 	 */
-	public static function processResponse() {
+	public function processResponse() {
 		if(preg_match('/^PXHOST/i', $_SERVER['HTTP_USER_AGENT'])){
 			$dpsDirectlyConnecting = 1;
 		}
