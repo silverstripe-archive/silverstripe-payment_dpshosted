@@ -38,7 +38,7 @@ class DPSHostedPaymentPage extends Page {
 			$page = new DPSHostedPaymentPage();
 			$page->Title = "Payment Status";
 			$page->URLSegment = "paymentstatus";
-			$page->ShowInMenu = 0;
+			$page->ShowInMenus = 0;
 			$page->ShowInSearch = 0;
 			$page->write();
 			
@@ -62,13 +62,15 @@ class DPSHostedPaymentPage_Controller extends Page_Controller {
 	
 	function success() {
 		return $this->customise(array(
-			'Content' => $this->SuccessContent
+			'Content' => $this->SuccessContent,
+			'Form' => ' '
 		))->renderWith('Page');
 	}
 	
 	function error() {
 		return $this->customise(array(
-			'Content' => $this->ErrorContent
+			'Content' => $this->ErrorContent,
+			'Form' => ' '
 		))->renderWith('Page');
 	}
 	
