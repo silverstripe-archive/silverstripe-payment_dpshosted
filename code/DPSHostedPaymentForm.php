@@ -1,4 +1,7 @@
 <?php
+/**
+ * @package payment_dpshosted
+ */
 class DPSHostedPaymentForm extends Form{
 	
 	/**
@@ -32,7 +35,10 @@ class DPSHostedPaymentForm extends Form{
 	function doDonate($data, $form){
 		$paymentClass = self::$payment_class;
 		$payment = new $paymentClass();
-		$payment->update($data);
+		
+		// ensures that we just write data that was submitted through the form
+		$form->saveInto($payment);
+		
 		$payment->setClientIP();
 		$payment->write();
 		$payment->processPayment($data, $form);
