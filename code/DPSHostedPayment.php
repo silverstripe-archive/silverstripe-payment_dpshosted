@@ -156,7 +156,8 @@ class DPSHostedPayment extends DataObject{
 		$request->setUrlSuccess($postProcess_url);
 		
 		// set amount
-		$request->setAmountInput($data['Amount']);
+		$amount = (float) ltrim($data['Amount'], '$');
+		$request->setAmountInput($amount);
 		
 		// mandatory free text data
 		if(isset($data['FirstName']) && isset($data['SurName'])) {
