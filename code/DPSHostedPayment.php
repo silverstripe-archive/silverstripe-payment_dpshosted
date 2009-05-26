@@ -124,7 +124,6 @@ class DPSHostedPayment extends DataObject{
 		$request_string = $pxpay->makeRequest($request);
 
 		$response = new MifMessage($request_string);
-		$url = $response->get_element_text("URI");
 		$valid = $response->get_attribute("valid");
 		
 		// set status to pending
@@ -133,8 +132,13 @@ class DPSHostedPayment extends DataObject{
 			$this->write();
 		}
 
-		header("Location: ".$url);
-		die;
+        // MifMessage was clobbering ampersands on some environments; SimpleXMLElement is more robust
+        $xml = new SimpleXMLElement($request_string);
+        $urls = $xml->xpath('//URI');     
+        $url = $urls[0].'';
+
+        header("Location: ".$url);
+        die;
 	}
 	
 	/**
