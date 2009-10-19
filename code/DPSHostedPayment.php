@@ -25,7 +25,7 @@ class DPSHostedPayment extends DataObject{
 	
 	private static $mac_Key;
 	
-	static static $pxPay_Url  = "https://www.paymentexpress.com/pxpay/pxaccess.aspx";
+	static $pxPay_Url  = "https://www.paymentexpress.com/pxpay/pxaccess.aspx";
   	
 	private static $pxPay_Userid;
   	
