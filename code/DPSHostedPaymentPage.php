@@ -42,7 +42,7 @@ class DPSHostedPaymentPage extends Page {
 			$page->ShowInSearch = 0;
 			$page->write();
 			
-			Database::alteration_message("DPSHostedPaymentPage page created","created");
+			SS_Database::alterationMessage("DPSHostedPaymentPage page created","created");
 		}
 	}
 }
