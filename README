@@ -1,0 +1,25 @@
+###############################################
+DPS Hosted Payment Module
+###############################################
+
+Maintainer Contact
+-----------------------------------------------
+Normann Lou (Nickname: nlou)
+<normann (at) silverstripe (dot) com>
+
+Requirements
+-----------------------------------------------
+
+Documentation
+-----------------------------------------------
+http://doc.silverstripe.com/doku.php?id=modules:payment_dpshosted
+
+Installation Instructions
+-----------------------------------------------
+See INSTALL
+
+Usage Overview
+-----------------------------------------------
+
+Known issues
+-----------------------------------------------
