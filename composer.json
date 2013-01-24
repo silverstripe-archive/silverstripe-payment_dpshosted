@@ -1,0 +1,16 @@
+{
+	"name": "silverstripe-labs/payment_dpshosted ",
+	"description": "SilverStripe Payment Module (DPS hosted).",
+	"type": "silverstripe-module",
+	"keywords": ["silverstripe-labs", "payment_dpshosted", "payment"],
+	"authors": [
+	{
+		"name": "Normann Lou",
+		"email": "nlou@silverstripe.com"
+	}
+	],
+	"require":
+	{
+		"silverstripe/framework": "2.4.*"
+	}
+}
