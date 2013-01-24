@@ -12,7 +12,7 @@ if(Director::isLive()){
 }
 */
 
-Director::addRules(50, array(
+Director::addRules(100, array(
 	'DPSHostedPayment/$Action/$ID' => 'DPSHostedPayment_Controller'
 ));
-?>
+

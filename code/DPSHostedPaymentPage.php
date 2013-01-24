@@ -17,14 +17,14 @@ class DPSHostedPaymentPage extends Page {
 	function getCMSFields() {
 		$fields = parent::getCMSFields();
 		
-		$fields->removeFieldFromTab('Root.Content.Main', 'Content');
+		$fields->removeFieldFromTab('Root.Main', 'Content');
 		
 		$fields->addFieldToTab(
-			'Root.Content.Main',
+			'Root.Main',
 			new HtmlEditorField('SuccessContent', 'Success message')
 		);
 		$fields->addFieldToTab(
-			'Root.Content.Main',
+			'Root.Main',
 			new HtmlEditorField('ErrorContent', 'Error message')
 		);
 		
@@ -75,4 +75,3 @@ class DPSHostedPaymentPage_Controller extends Page_Controller {
 	}
 	
 }
-?>

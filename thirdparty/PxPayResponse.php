@@ -102,4 +102,3 @@ class PxPayResponse extends PxPayMessage
 	
 }
 
-?>

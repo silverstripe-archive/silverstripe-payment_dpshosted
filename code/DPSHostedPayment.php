@@ -249,7 +249,7 @@ class DPSHostedPayment_Controller extends Controller {
 			if(!$payment) {
 				// @todo more specific error messages
 				$redirectURL = $page->Link() . '/error';
-				Director::redirect($redirectURL);
+				$this->redirect($redirectURL);
 			}
 
 			$success = $rsp->getSuccess();
@@ -266,7 +266,7 @@ class DPSHostedPayment_Controller extends Controller {
 				$redirectURL = $page->Link() . '/error';
 			}
 			$payment->write();
-			Director::redirect($redirectURL);
+			$this->redirect($redirectURL);
 
 		}
 	}

@@ -10,14 +10,14 @@ class DPSHostedPaymentForm extends Form{
 	static $payment_class = 'DPSHostedPayment';
 	
 	function __construct($controller, $name){
-		$fields = new FieldSet(
+		$fields = new FieldList(
 			$donationAmount = new CurrencyField("Amount", "Amount"),
 			new TextField("FirstName", "First Name"),
 			new TextField("Surname", "Surname"),
 			$email = new EmailField("Email", "Email")
 		);
 
-		$actions = new FieldSet(
+		$actions = new FieldList(
 			new FormAction("doPay", "Pay")
 		);
 		
@@ -44,4 +44,4 @@ class DPSHostedPaymentForm extends Form{
 		$payment->processPayment($data, $form);
 	}
 }
-?>
+
