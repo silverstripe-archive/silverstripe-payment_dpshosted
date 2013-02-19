@@ -1,5 +1,5 @@
 {
-	"name": "silverstripe-labs/payment_dpshosted ",
+	"name": "silverstripe/payment_dpshosted ",
 	"description": "SilverStripe Payment Module (DPS hosted).",
 	"type": "silverstripe-module",
 	"keywords": ["silverstripe-labs", "payment_dpshosted", "payment"],
